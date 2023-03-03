@@ -1,7 +1,7 @@
 {
   "name": "@simplyhexagonal/fastify-file-browser",
   "version": "1.0.0",
-  "description": "Read-only file browser UI for viewing and downloading files within the current working directory.",
+  "description": "Read-only file browser UI for viewing and downloading local files within the current working directory.",
   "keywords": [
     "fastify",
     "file browser",
