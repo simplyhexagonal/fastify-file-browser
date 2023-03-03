@@ -1,9 +1,7 @@
-# Fastify File Browser
-![Tests](https://github.com/simplyhexagonal/fastify-file-browser/workflows/tests/badge.svg)
-[![Try fastify-file-browser on RunKit](https://badge.runkitcdn.com/@simplyhexagonal/fastify-file-browser.svg)](https://npm.runkit.com/@simplyhexagonal/fastify-file-browser)
+# Fastify File Browser 📂
 
-Fastify File Browser provides a read-only file browser UI for viewing and downloading files within
-the working directory where you run it.
+Fastify File Browser provides a read-only file browser UI for viewing and downloading local files
+within the working directory where you run it.
 
 ![](https://raw.githubusercontent.com/simplyhexagonal/fastify-file-browser/main/demo.gif)
 
@@ -66,7 +64,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tr>
     <td align="center"><a href="https://jeanlescure.cr"><img src="https://shortunique.id/assets/contributors/jeanlescure.svg" /></a><table><tbody><tr><td width="150" align="center"><a href="#maintenance-jeanlescure" title="Maintenance">🚧</a> <a href="https://github.com/jeanlescure/short-unique-id/commits?author=jeanlescure" title="Code">💻</a> <a href="https://github.com/jeanlescure/short-unique-id/commits?author=jeanlescure" title="Documentation">📖</a> <a href="https://github.com/jeanlescure/short-unique-id/commits?author=jeanlescure" title="Tests">⚠️</a></td></tr></tbody></table></td>
-    <td align="center"><a href="https://dianalu.design"><img src="https://shortunique.id/assets/contributors/dilescure.svg" /></a><table><tbody><tr><td width="150" align="center"><a href="https://github.com/jeanlescure/short_uuid/commits?author=DiLescure" title="Code">💻</a></td></tr></tbody></table></td>
+    <td align="center"><a href="https://dianalu.design"><img src="https://shortunique.id/assets/contributors/dilescure.svg" /></a><table><tbody><tr><td width="150" align="center"><a href="https://github.com/jeanlescure/short_uuid/commits?author=DiLescure" title="User Testing">📓</a></td></tr></tbody></table></td>
   </tr>
 </table>
 <!-- markdownlint-enable -->
@@ -75,7 +73,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 
 ## License
 
-Copyright (c) 2021-Present [Fastify File Browser Contributors](https://github.com/simplyhexagonal/fastify-file-browser/#contributors-).<br/>
+Copyright (c) 2023-Present [Fastify File Browser Contributors](https://github.com/simplyhexagonal/fastify-file-browser/#contributors-).<br/>
 Licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
 For your convenience, here is a list of all the licenses of this package's dependencies:
