@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Browser</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📂</text></svg>">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  "/assets/css/tailwind.css"
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-50">
+  <div id="app" class="w-full h-full">
+    <div class="header flex bg-gray-200 dark:bg-gray-700 p-2">
+      <div class="flex-1">
+        &nbsp;
+      </div>
+      <!-- controls -->
+      <div class="flex items-center justify-end">
+        <input
+          name="showThumbnails"
+          id="showThumbnails"
+          type="checkbox"
+          class="form-checkbox h-5 w-5 text-gray-600"
+          v-model="showThumbnails"
+        />
+        <label
+          for="showThumbnails"
+          class="cursor-pointer ml-2"
+        >
+          Show Thumbnails
+        </label>
+        <span class="mx-4">|</span>
+        <button
+          class="flex items-center dark:hover:bg-sky-700 hover:bg-sky-200"
+          @click="() => onDirectoryClick(currentDirectory)"
+        >
+          "/assets/icons/refresh.svg"
+          <span class="mx-1">Refresh</span>
+        </button>
+      </div>
+    </div>
+    <ul class="directories flex flex-wrap p-4">
+      <li
+        @click.stop.prevent="() => onDirectoryClick(directory.path)"
+        class="cursor-pointer my-4 mx-2 w-[8rem] dark:hover:bg-sky-700 hover:bg-sky-200"
+        v-for="directory in tree.directories"
+      >
+        <span
+          class="icon block m-auto text-center text-green-600 dark:text-green-400"
+          v-html="getIcon(directory)"
+        >
+          <!-- dynamic -->
+        </span>
+        <a class="file-name block m-auto text-center" :href="directory.path">
+          {{ directory.name }}
+        </a>
+      </li>
+    </ul>
+    <ul class="files flex flex-wrap p-4" :class="{'thumbnails': showThumbnails}">
+      <li
+        v-for="file in tree.files"
+        class="cursor-pointer my-4 mx-2 w-[8rem] dark:hover:bg-sky-700 hover:bg-sky-200"
+      >
+        <a class="block w-full h-full" :href="file.path" target="_blank">
+          <span
+            class="icon block m-auto text-center text-slate-500 dark:text-slate-300"
+            v-html="getIcon(file)"
+          >
+            <!-- dynamic -->
+          </span>
+          <span class="file-name block m-auto text-center">{{ file.name }}</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    const ROOT_DIR = '/fs/';
+
+    const MIMETYPE_ICON_MAP = {
+      'inode/directory': '/assets/icons/folder.svg',
+      'application/javascript': '/assets/icons/file-code.svg',
+      'application/octet-stream': '/assets/icons/file-binary.svg',
+      'application/pdf': '/assets/icons/file-pdf.svg',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '/assets/icons/file-excel.svg',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '/assets/icons/file-word.svg',
+      'application/vnd.ms-powerpoint': '/assets/icons/file-powerpoint.svg',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': '/assets/icons/file-powerpoint.svg',
+      'video/x-matroska': '/assets/icons/file-video.svg',
+      'application/x-msdos-program': '/assets/icons/file-executable.svg',
+      'application/x-sh': '/assets/icons/file-executable.svg',
+      'audio/mpeg': '/assets/icons/file-audio.svg',
+      'audio/wave': '/assets/icons/file-audio.svg',
+      'image/jpeg': '/assets/icons/file-image.svg',
+      'image/png': '/assets/icons/file-image.svg',
+      'image/gif': '/assets/icons/file-gif.svg',
+      'image/svg+xml': '/assets/icons/file-image.svg',
+      'text/csv': '/assets/icons/file-spreadsheet.svg',
+      'text/html': '/assets/icons/file-code.svg',
+      'text/jsx': '/assets/icons/file-code.svg',
+      'text/plain': '/assets/icons/file-text.svg',
+      'text/tab-separated-values': '/assets/icons/file-spreadsheet.svg',
+      'video/mp2t': '/assets/icons/file-code.svg',
+      'video/mp4': '/assets/icons/file-video.svg',
+      'video/quicktime': '/assets/icons/file-video.svg',
+      'video/x-msvideo': '/assets/icons/file-video.svg',
+      'application/zip': '/assets/icons/file-zip.svg',
+      'application/gzip': '/assets/icons/file-zip.svg',
+    };
+
+    createApp({
+      data: () => (
+        {
+          currentDirectory: ROOT_DIR,
+          showThumbnails: false,
+          tree: {
+            files: [],
+            directories: [],
+          },
+        }
+      ),
+      methods: {
+        getIcon({mimeType, path}) {
+          if (this.showThumbnails && (/^image/).test(mimeType)) {
+            return `<img src="${path.replace(/\/fs\//, '/')}"/>`;
+          }
+
+          return MIMETYPE_ICON_MAP[mimeType] || MIMETYPE_ICON_MAP['application/octet-stream'];
+        },
+        onDirectoryClick(path) {
+          axios.get(`${path}`)
+            .then((response) => {
+              this.tree = response.data;
+
+              this.currentDirectory = path;
+
+              if (this.currentDirectory !== ROOT_DIR) {
+                this.tree.directories.unshift({
+                  name: '..',
+                  path: this.currentDirectory.split('/').slice(0, -2).join('/') + '/',
+                  mimeType: 'inode/directory',
+                });
+              }
+            })
+            .catch((error) => {
+              console.error(error);
+            });
+        },
+      },
+      mounted() {
+        axios.get(`${this.currentDirectory}`)
+          .then((response) => {
+            this.tree = response.data;
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      },
+      watch: {
+        currentDirectory() {
+          console.log(
+            JSON.stringify(
+              this.tree.files.map((file) => file.mimeType),
+              null,
+              2,
+            ),
+          );
+        },
+      },
+    }).mount('#app');
+  </script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: sans-serif;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #app {
+      overflow-x: auto;
+      overflow-y: scroll;
+    }
+    svg {
+      display: inline-block;
+      fill: currentColor;
+    }
+    .directories svg,
+    .files svg {
+      width: 64px;
+    }
+    .files.thumbnails svg,
+    .files.thumbnails img {
+      width: 128px;
+    }
+    .file-name {
+      overflow-wrap: break-word;
+    }
+  </style>
+</body>
+</html>

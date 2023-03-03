@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const fileSrcPath = `src/index.ts`;
+const fileDir = (
+  fileSrcPath === 'src/index.ts'
+) ? (
+  ''
+) : (
+  [fileSrcPath.replace(/^src\//, '').replace(/\/[^\/]+.ts$/, ''), '/'].join('')
+);
+const fileName = fileSrcPath.replace(/^.+\/([^\/]+).ts$/, '$1');
+
+const outfile = `./dist/${fileDir}${fileName}.js`;
+
+const data = fs.readFileSync(outfile);
+const fd = fs.openSync(outfile, 'w+');
+const insert = Buffer.from('#!/usr/bin/env node\n');
+
+fs.writeSync(fd, insert, 0, insert.length, 0);
+fs.writeSync(fd, data, 0, data.length, insert.length);
+
+fs.close(fd, (err) => {
+  if (err) throw err;
+});
+
+console.log('Done.');
