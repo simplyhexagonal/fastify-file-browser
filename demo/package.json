@@ -1,0 +1,56 @@
+{
+  "name": "@simplyhexagonal/fastify-file-browser",
+  "version": "1.0.0",
+  "description": "Read-only file browser UI for viewing and downloading local files within the current working directory.",
+  "keywords": [
+    "fastify",
+    "file browser",
+    "file explorer",
+    "file manager",
+    "file server",
+    "local",
+    "ui",
+    "vue",
+    "vuejs",
+    "vue.js",
+    "tailwindcss",
+    "tailwind"
+  ],
+  "contributors": [
+    {
+      "name": "Jean M. Lescure",
+      "email": "opensource@jeanlescure.io",
+      "url": "http://jeanlescure.io/"
+    }
+  ],
+  "main": "dist/index.js",
+  "bin": {
+    "fastify-file-browser": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "package.json",
+    "README.md"
+  ],
+  "scripts": {
+    "tailwind": "npx tailwindcss -i ./src/tailwind.css -o ./src/assets/css/tailwind.css",
+    "dev": "nodemon -w src -e ts,html --exec ./scripts/dev",
+    "build": "rm -rf ./dist && mkdir -p dist && ./scripts/build && cp -r ./src/assets ./dist/assets",
+    "postbuild": "npx rollup@3.18.0 ./dist/index.js --file ./dist/index.js --format cjs && ./scripts/binify"
+  },
+  "author": "Jean M. Lescure",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@fastify/static": "6.9.0",
+    "@types/mime-types": "2.1.1",
+    "@types/node": "18.14.4",
+    "esbuild": "0.17.10",
+    "fastify": "4.13.0",
+    "glob": "9.1.2",
+    "mime-types": "2.1.35",
+    "nodemon": "2.0.20",
+    "ts-node": "10.9.1",
+    "tslib": "2.5.0",
+    "typescript": "4.9.5"
+  }
+}

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Browser</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📂</text></svg>">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  "/assets/css/tailwind.css"
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-50">
+  <div id="app" class="w-full h-full">
+    <div class="header flex bg-gray-200 dark:bg-gray-700 p-2">
+      <div class="flex-1">
+        &nbsp;
+      </div>
+      <!-- controls -->
+      <div class="flex items-center justify-end">
+        <input
+          name="showThumbnails"
+          id="showThumbnails"
+          type="checkbox"
+          class="form-checkbox h-5 w-5 text-gray-600"
+          v-model="showThumbnails"
+        />
+        <label
+          for="showThumbnails"
+          class="cursor-pointer ml-2"
+        >
+          Show Thumbnails
+        </label>
+        <span class="mx-4">|</span>
+        <button
+          class="flex items-center dark:hover:bg-sky-700 hover:bg-sky-200"
+          @click="() => onDirectoryClick(currentDirectory)"
+        >
+          "/assets/icons/refresh.svg"
+          <span class="mx-1">Refresh</span>
+        </button>
+      </div>
+    </div>
+    <ul class="directories flex flex-wrap p-4">
+      <li
+        @click.stop.prevent="() => onDirectoryClick(directory.path)"
+        class="cursor-pointer my-4 mx-2 w-[8rem] dark:hover:bg-sky-700 hover:bg-sky-200"
+        v-for="directory in tree.directories"
+      >
+        <span
+          class="icon block m-auto text-center text-green-600 dark:text-green-400"
+          v-html="getIcon(directory)"
+        >
+          <!-- dynamic -->
+        </span>
+        <a class="file-name block m-auto text-center" :href="directory.path">
+          {{ directory.name }}
+        </a>
+      </li>
+    </ul>
+    <ul class="files flex flex-wrap p-4" :class="{'thumbnails': showThumbnails}">
+      <li
+        v-for="file in tree.files"
+        class="cursor-pointer my-4 mx-2 w-[8rem] dark:hover:bg-sky-700 hover:bg-sky-200"
+      >
+        <a class="block w-full h-full" :href="file.path" target="_blank">
+          <span
+            class="icon block m-auto text-center text-slate-500 dark:text-slate-300"
+            v-html="getIcon(file)"
+          >
+            <!-- dynamic -->
+          </span>
+          <span class="file-name block m-auto text-center">{{ file.name }}</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    const ROOT_DIR = '/fs/';
+
+    const FS_STRUCTURE = {
+      "/fs/":{"directories":[{"name":"fixtures","path":"/fs/fixtures/","mimeType":"inode/directory"},{"name":"scripts","path":"/fs/scripts/","mimeType":"inode/directory"},{"name":"src","path":"/fs/src/","mimeType":"inode/directory"}],"files":[{"name":"package.json","path":"/fs/package.json","mimeType":"application/json"},{"name":"README.md","path":"/fs/README.md","mimeType":"text/markdown"},{"name":"tailwind.config.js","path":"/fs/tailwind.config.js","mimeType":"application/javascript"},{"name":"tsconfig.json","path":"/fs/tsconfig.json","mimeType":"application/json"}]},
+      "/fs/fixtures/":{"directories":[{"name":"..","path":"/fs/","mimeType":"inode/directory"}],"files":[{"name":"animation.gif","path":"/fs/fixtures/animation.gif","mimeType":"image/gif"},{"name":"archive.zip","path":"/fs/fixtures/archive.zip","mimeType":"application/zip"},{"name":"compressed.tar.gz","path":"/fs/fixtures/compressed.tar.gz","mimeType":"application/gzip"},{"name":"data.csv","path":"/fs/fixtures/data.csv","mimeType":"text/csv"},{"name":"data.tsv","path":"/fs/fixtures/data.tsv","mimeType":"text/tab-separated-values"},{"name":"document.docx","path":"/fs/fixtures/document.docx","mimeType":"application/vnd.openxmlformats-officedocument.wordprocessingml.document"},{"name":"document.pdf","path":"/fs/fixtures/document.pdf","mimeType":"application/pdf"},{"name":"executable.exe","path":"/fs/fixtures/executable.exe","mimeType":"application/x-msdos-program"},{"name":"image.jpeg","path":"/fs/fixtures/image.jpeg","mimeType":"image/jpeg"},{"name":"image.svg","path":"/fs/fixtures/image.svg","mimeType":"image/svg+xml"},{"name":"javascript.js","path":"/fs/fixtures/javascript.js","mimeType":"application/javascript"},{"name":"javascript.jsx","path":"/fs/fixtures/javascript.jsx","mimeType":"text/jsx"},{"name":"movie.avi","path":"/fs/fixtures/movie.avi","mimeType":"video/x-msvideo"},{"name":"movie.mkv","path":"/fs/fixtures/movie.mkv","mimeType":"video/x-matroska"},{"name":"movie.mov","path":"/fs/fixtures/movie.mov","mimeType":"video/quicktime"},{"name":"movie.mp4","path":"/fs/fixtures/movie.mp4","mimeType":"video/mp4"},{"name":"music.mp3","path":"/fs/fixtures/music.mp3","mimeType":"audio/mpeg"},{"name":"no-ext","path":"/fs/fixtures/no-ext","mimeType":"application/octet-stream"},{"name":"picture.jpg","path":"/fs/fixtures/picture.jpg","mimeType":"image/jpeg"},{"name":"picture.png","path":"/fs/fixtures/picture.png","mimeType":"image/png"},{"name":"presentation.pptx","path":"/fs/fixtures/presentation.pptx","mimeType":"application/vnd.openxmlformats-officedocument.presentationml.presentation"},{"name":"python.py","path":"/fs/fixtures/python.py","mimeType":"application/octet-stream"},{"name":"react.tsx","path":"/fs/fixtures/react.tsx","mimeType":"application/octet-stream"},{"name":"script.sh","path":"/fs/fixtures/script.sh","mimeType":"application/x-sh"},{"name":"sound.wav","path":"/fs/fixtures/sound.wav","mimeType":"audio/wave"},{"name":"spreadsheet.xlsx","path":"/fs/fixtures/spreadsheet.xlsx","mimeType":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},{"name":"text.txt","path":"/fs/fixtures/text.txt","mimeType":"text/plain"},{"name":"typescript.ts","path":"/fs/fixtures/typescript.ts","mimeType":"video/mp2t"},{"name":"webpage.html","path":"/fs/fixtures/webpage.html","mimeType":"text/html"}]},
+      "/fs/scripts/":{"directories":[{"name":"..","path":"/fs/","mimeType":"inode/directory"}],"files":[{"name":"binify","path":"/fs/scripts/binify","mimeType":"application/octet-stream"},{"name":"build","path":"/fs/scripts/build","mimeType":"application/octet-stream"},{"name":"dev","path":"/fs/scripts/dev","mimeType":"application/octet-stream"}]},
+      "/fs/src/":{"directories":[{"name":"..","path":"/fs/","mimeType":"inode/directory"},{"name":"assets","path":"/fs/src/assets/","mimeType":"inode/directory"}],"files":[{"name":"index.html","path":"/fs/src/index.html","mimeType":"text/html"},{"name":"index.ts","path":"/fs/src/index.ts","mimeType":"video/mp2t"},{"name":"tailwind.css","path":"/fs/src/tailwind.css","mimeType":"text/css"}]},
+      "/fs/src/assets/":{"directories":[{"name":"..","path":"/fs/src/","mimeType":"inode/directory"},{"name":"css","path":"/fs/src/assets/css/","mimeType":"inode/directory"},{"name":"icons","path":"/fs/src/assets/icons/","mimeType":"inode/directory"}],"files":[]},
+      "/fs/src/assets/css/":{"directories":[{"name":"..","path":"/fs/src/assets/","mimeType":"inode/directory"}],"files":[{"name":"tailwind.css","path":"/fs/src/assets/css/tailwind.css","mimeType":"text/css"}]},
+      "/fs/src/assets/icons/":{"directories":[{"name":"..","path":"/fs/src/assets/","mimeType":"inode/directory"}],"files":[{"name":"file-audio.svg","path":"/fs/src/assets/icons/file-audio.svg","mimeType":"image/svg+xml"},{"name":"file-binary.svg","path":"/fs/src/assets/icons/file-binary.svg","mimeType":"image/svg+xml"},{"name":"file-code.svg","path":"/fs/src/assets/icons/file-code.svg","mimeType":"image/svg+xml"},{"name":"file-excel.svg","path":"/fs/src/assets/icons/file-excel.svg","mimeType":"image/svg+xml"},{"name":"file-executable.svg","path":"/fs/src/assets/icons/file-executable.svg","mimeType":"image/svg+xml"},{"name":"file-gif.svg","path":"/fs/src/assets/icons/file-gif.svg","mimeType":"image/svg+xml"},{"name":"file-image.svg","path":"/fs/src/assets/icons/file-image.svg","mimeType":"image/svg+xml"},{"name":"file-pdf.svg","path":"/fs/src/assets/icons/file-pdf.svg","mimeType":"image/svg+xml"},{"name":"file-powerpoint.svg","path":"/fs/src/assets/icons/file-powerpoint.svg","mimeType":"image/svg+xml"},{"name":"file-spreadsheet.svg","path":"/fs/src/assets/icons/file-spreadsheet.svg","mimeType":"image/svg+xml"},{"name":"file-text.svg","path":"/fs/src/assets/icons/file-text.svg","mimeType":"image/svg+xml"},{"name":"file-video.svg","path":"/fs/src/assets/icons/file-video.svg","mimeType":"image/svg+xml"},{"name":"file-word.svg","path":"/fs/src/assets/icons/file-word.svg","mimeType":"image/svg+xml"},{"name":"file-zip.svg","path":"/fs/src/assets/icons/file-zip.svg","mimeType":"image/svg+xml"},{"name":"folder.svg","path":"/fs/src/assets/icons/folder.svg","mimeType":"image/svg+xml"},{"name":"refresh.svg","path":"/fs/src/assets/icons/refresh.svg","mimeType":"image/svg+xml"}]}
+    };
+
+    const MIMETYPE_ICON_MAP = {
+      'inode/directory': '/assets/icons/folder.svg',
+      'application/javascript': '/assets/icons/file-code.svg',
+      'application/octet-stream': '/assets/icons/file-binary.svg',
+      'application/pdf': '/assets/icons/file-pdf.svg',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '/assets/icons/file-excel.svg',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '/assets/icons/file-word.svg',
+      'application/vnd.ms-powerpoint': '/assets/icons/file-powerpoint.svg',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': '/assets/icons/file-powerpoint.svg',
+      'video/x-matroska': '/assets/icons/file-video.svg',
+      'application/x-msdos-program': '/assets/icons/file-executable.svg',
+      'application/x-sh': '/assets/icons/file-executable.svg',
+      'audio/mpeg': '/assets/icons/file-audio.svg',
+      'audio/wave': '/assets/icons/file-audio.svg',
+      'image/jpeg': '/assets/icons/file-image.svg',
+      'image/png': '/assets/icons/file-image.svg',
+      'image/gif': '/assets/icons/file-gif.svg',
+      'image/svg+xml': '/assets/icons/file-image.svg',
+      'text/csv': '/assets/icons/file-spreadsheet.svg',
+      'text/html': '/assets/icons/file-code.svg',
+      'text/jsx': '/assets/icons/file-code.svg',
+      'text/plain': '/assets/icons/file-text.svg',
+      'text/tab-separated-values': '/assets/icons/file-spreadsheet.svg',
+      'video/mp2t': '/assets/icons/file-code.svg',
+      'video/mp4': '/assets/icons/file-video.svg',
+      'video/quicktime': '/assets/icons/file-video.svg',
+      'video/x-msvideo': '/assets/icons/file-video.svg',
+      'application/zip': '/assets/icons/file-zip.svg',
+      'application/gzip': '/assets/icons/file-zip.svg',
+    };
+
+    createApp({
+      data: () => (
+        {
+          currentDirectory: ROOT_DIR,
+          showThumbnails: false,
+          tree: {
+            files: [],
+            directories: [],
+          },
+        }
+      ),
+      methods: {
+        getIcon({mimeType, path}) {
+          if (this.showThumbnails && (/^image/).test(mimeType)) {
+            return `<img src="${path.replace(/\/fs\//, '/')}"/>`;
+          }
+
+          return MIMETYPE_ICON_MAP[mimeType] || MIMETYPE_ICON_MAP['application/octet-stream'];
+        },
+        onDirectoryClick(path) {
+          this.currentDirectory = path;
+          this.tree = FS_STRUCTURE[this.currentDirectory];
+        },
+      },
+      mounted() {
+        this.tree = FS_STRUCTURE[this.currentDirectory];
+      },
+      watch: {
+        currentDirectory() {
+          console.log(
+            JSON.stringify(
+              {
+                [`${this.currentDirectory}`]: this.tree,
+              },
+            ),
+          );
+        },
+      },
+    }).mount('#app');
+  </script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: sans-serif;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #app {
+      overflow-x: auto;
+      overflow-y: scroll;
+    }
+    svg {
+      display: inline-block;
+      fill: currentColor;
+    }
+    .directories svg,
+    .files svg {
+      width: 64px;
+    }
+    .files.thumbnails svg,
+    .files.thumbnails img {
+      width: 128px;
+    }
+    .file-name {
+      overflow-wrap: break-word;
+    }
+  </style>
+</body>
+</html>

@@ -1,0 +1,66 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const { build } = require('esbuild');
+
+const fileSrcPath = `src/index.ts`;
+const fileDir = (
+  fileSrcPath === 'src/index.ts'
+) ? (
+  ''
+) : (
+  [fileSrcPath.replace(/^src\//, '').replace(/\/[^\/]+.ts$/, ''), '/'].join('')
+);
+const fileName = fileSrcPath.replace(/^.+\/([^\/]+).ts$/, '$1');
+
+const outfile = `./dist/${fileDir}${fileName}.js`;
+
+let htmlEmbedPlugin = {
+  name: 'example',
+  setup(currentBuild) {
+    // Load ".txt" files and return an array of words
+    currentBuild.onLoad({ filter: /\.ts$/ }, (args) => {
+      let contents = fs.readFileSync(args.path, 'utf8');
+
+      contents = contents.replace(
+        /let html = [^;]+;/,
+        () => {
+          let html = fs.readFileSync('./src/index.html', 'utf8');
+          html = html.replace(
+            /`/g, () => '\\`'
+          ).replace(
+            /\$/g, () => '\\$'
+          ).replace(
+            /\\\//g, () => '\\\\/'
+          );
+
+          return `let html = \`${html}\`;`;
+        },
+      );
+
+      return {
+        contents,
+        loader: 'ts',
+      };
+    })
+  },
+}
+
+const options = {
+  entryPoints: [fileSrcPath],
+  outfile,
+  bundle: true,
+  external: [],
+  minify: true,
+  platform: 'node',
+  sourcemap: false,
+  plugins: [htmlEmbedPlugin],
+};
+
+const main = async () => {
+  const { errors, warnings } = await build(options);
+  warnings.forEach((w) => console.warn(w));
+  errors.forEach((e) => console.error(e));
+};
+
+main();
