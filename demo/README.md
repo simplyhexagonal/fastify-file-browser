@@ -1,6 +1,6 @@
 # Fastify File Browser 📂
 
-Fastify File Browser provides a read-only file browser UI for viewing and downloading local files
+Fastify File Browser provides a simple file browser UI for viewing and downloading local files
 within the working directory where you run it.
 
 ![](https://raw.githubusercontent.com/simplyhexagonal/fastify-file-browser/main/demo.gif)
