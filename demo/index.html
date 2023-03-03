@@ -688,7 +688,12 @@ video {
   <div id="app" class="w-full h-full">
     <div class="header flex bg-gray-200 dark:bg-gray-700 p-2">
       <div class="flex-1">
-        &nbsp;
+        <button
+          class="info-button flex items-center dark:hover:bg-sky-700 hover:bg-sky-200"
+          @click="toggleInfo"
+        >
+          "/assets/icons/information.svg"
+        </button>
       </div>
       <!-- controls -->
       <div class="flex items-center justify-end">
@@ -714,6 +719,80 @@ video {
           <span class="mx-1">Refresh</span>
         </button>
       </div>
+    </div>
+    <div
+      class="info absolute top-12 left-4 bg-gray-300 dark:bg-gray-700 shadow-lg p-8 rounded-lg"
+      v-if="showInfo"
+      v-click-outside="closeInfo"
+    >
+      <h2 class="text-xl font-bold mb-2">Made by Simply Hexagonal</h2>
+      <p class="mb-8">
+        <a
+          class="text-indigo-700 dark:text-indigo-300"
+          target="_blank"
+          href=""
+        >
+          website
+        </a>
+        <span> | </span>
+        <a
+          class="text-indigo-700 dark:text-indigo-300"
+          target="_blank"
+          href=""
+        >
+          github
+        </a>
+      </p>
+      <p class="mb-2">
+        Built using:
+      </p>
+      <ul class="list-disc list-inside pl-2">
+        <li>
+          <a
+            class="text-indigo-700 dark:text-indigo-300"
+            target="_blank"
+            href="https://www.fastify.io/"
+          >
+            Fastify
+          </a>
+        </li>
+        <li>
+          <a
+            class="text-indigo-700 dark:text-indigo-300"
+            target="_blank"
+            href="https://vuejs.org/"
+          >
+            Vue JS
+          </a>
+        </li>
+        <li>
+          <a
+            class="text-indigo-700 dark:text-indigo-300"
+            target="_blank"
+            href="https://tailwindcss.com/"
+          >
+            Tailwind CSS
+          </a>
+        </li>
+        <li>
+          <a
+            class="text-indigo-700 dark:text-indigo-300"
+            target="_blank"
+            href="https://axios-http.com/"
+          >
+            Axios
+          </a>
+        </li>
+        <li>
+          <a
+            class="text-indigo-700 dark:text-indigo-300"
+            target="_blank"
+            href="https://remixicon.com/"
+          >
+            Remix Icon
+          </a>
+        </li>
+      </ul>
     </div>
     <ul class="directories flex flex-wrap p-4">
       <li
@@ -796,7 +875,7 @@ video {
       'application/gzip': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M20 22H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1zm-1-2V4H5v16h14zm-5-8v5h-4v-3h2v-2h2zm-2-8h2v2h-2V4zm-2 2h2v2h-2V6zm2 2h2v2h-2V8zm-2 2h2v2h-2v-2z"/></svg>',
     };
 
-    createApp({
+    const app = createApp({
       data: () => (
         {
           currentDirectory: ROOT_DIR,
@@ -808,6 +887,12 @@ video {
         }
       ),
       methods: {
+        toggleInfo() {
+          this.showInfo = !this.showInfo;
+        },
+        closeInfo() {
+          this.showInfo = false;
+        },
         getIcon({mimeType, path}) {
           if (this.showThumbnails && (/^image/).test(mimeType)) {
             return `<img src="${path}"/>`;
@@ -834,7 +919,27 @@ video {
           );
         },
       },
-    }).mount('#app');
+    });
+    
+    app.directive(
+      'click-outside',
+      (el, binding, vnode) => {
+        console.log(el);
+        document.addEventListener('click', (event) => {
+          if (
+            el.contains(event.target)
+            || (/info/).test(event.target.className)
+            || (/info/).test(event.target.parentElement.className)
+            || (/info/).test(event.target.parentElement.parentElement.className)
+          ) {
+            return;
+          }
+          binding.value(event);
+        });
+      },
+    );
+    
+    app.mount('#app');
   </script>
 
   <style>
