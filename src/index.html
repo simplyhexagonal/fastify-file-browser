@@ -143,7 +143,7 @@
       </ul>
     </div>
     <div
-      class="upload absolute top-12 right-4 bg-gray-300 dark:bg-gray-700 shadow-lg p-8 rounded-lg z-20"
+      class="upload absolute top-12 right-8 bg-gray-300 dark:bg-gray-700 shadow-lg p-8 rounded-lg z-20"
       v-if="showUpload"
       v-click-outside="closeUpload"
     >
@@ -154,7 +154,9 @@
       >
         <label
           for="file"
-          class="upload-choose-button cursor-pointer mb-2 p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg flex items-center"
+          class="upload-choose-button mb-2 p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg flex items-center"
+          :class="{'cursor-pointer': !uploading}"
+          :disabled="uploading"
         >
           <span class="icon">
             "/assets/icons/upload-cloud.svg"
@@ -180,14 +182,19 @@
           <span class="mx-1">Upload</span>
         </button>
         <div
-          class="loader mb-2 py-4 px-5 text-white rounded-lg flex items-center w-full"
+          class="mb-2 py-4 px-5 text-white rounded-lg flex items-center w-full"
           :class="{
             'bg-green-500 dark:bg-green-600': file,
             'bg-gray-500 dark:bg-gray-600': !file,
           }"
           v-if="uploading"
         >
-          <div></div><div></div><div></div>
+          <div class="loader mb-6">
+            <div></div><div></div><div></div>
+          </div>
+          <div class="pl-8">
+            Uploading ({{uploadProgress}}%)
+          </div>
         </div>
       </form>
     </div>
@@ -236,9 +243,29 @@
         </li>
       </ul>
       <div
-        v-if="showUpload || showInfo"
+        v-if="showUpload || showInfo || showMessage"
         class="absolute top-0 right-0 bottom-0 left-0 bg-black opacity-50 z-10"
       ></div>
+      <div
+        v-if="showMessage"
+        class="absolute top-0 right-0 bottom-0 left-0 grid justify-items-center content-center z-20"
+        @click.self="() => closeMessage()"
+      >
+        <div
+          class="message rounded-lg p-5 shadow-lg"
+          :class="MESSAGE_COLOR_CLASS_MAP[message.color]"
+        >
+          <div class="mb-4">{{message.text}}</div>
+          <div class="text-right">
+            <button
+              class="close-message-button p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg"
+              @click="closeMessage"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -278,9 +305,16 @@
       'application/gzip': '/assets/icons/file-zip.svg',
     };
 
+    const MESSAGE_COLOR_CLASS_MAP = {
+      default: 'bg-gray-300 dark:bg-gray-700',
+      success: 'bg-green-300 dark:bg-green-700',
+      error: 'bg-red-300 dark:bg-red-700',
+    };
+
     const app = createApp({
       data: () => (
         {
+          MESSAGE_COLOR_CLASS_MAP,
           uploadsAllowed: ALLOW_FILE_UPLOADS,
           loading: true,
           currentDirectory: ROOT_DIR,
@@ -288,7 +322,14 @@
           showInfo: false,
           showUpload: false,
           showMenu: false,
+          showMessage: false,
+          message: {
+            text: '',
+            color: 'default',
+            postCloseAction: null,
+          },
           uploading: false,
+          uploadProgress: 0,
           file: null,
           tree: {
             files: [],
@@ -304,13 +345,24 @@
           this.showInfo = false;
         },
         toggleUpload() {
-          this.showUpload = !this.showUpload;
+          if (!this.uploading) {
+            this.showUpload = !this.showUpload;
+          }
         },
         closeUpload() {
-          this.showUpload = false;
+          if (!this.uploading) {
+            this.showUpload = false;
+          }
         },
         toggleMenu() {
           this.showMenu = !this.showMenu;
+        },
+        closeMessage() {
+          this.showMessage = false;
+
+          if (this.message.postCloseAction) {
+            this.message.postCloseAction();
+          }
         },
         getIcon({mimeType, path}) {
           if (this.showThumbnails && (/^image/).test(mimeType)) {
@@ -334,7 +386,7 @@
           axios.get(`${path}`)
             .then(
               (response) => {
-                this.tree = response.data;
+                this.tree = response.data.message;
 
                 this.currentDirectory = path;
 
@@ -344,6 +396,11 @@
             .catch(
               (error) => {
                 console.error(error);
+
+                this.message.text = 'Error loading directory';
+                this.message.color = 'error';
+                this.message.postCloseAction = null;
+                this.showMessage = true;
               },
             ).finally(
               () => {
@@ -361,41 +418,43 @@
 
           this.uploading = true;
 
-          axios.post(`/upload?path=${this.currentDirectory}`, formData)
+          axios.post(
+            `/upload?path=${this.currentDirectory}`,
+            formData,
+            {
+              onUploadProgress: ({progress}) => {
+                this.uploadProgress = parseInt(progress * 100);
+              },
+            },
+          )
             .then(
               (response) => {
-                this.tree = response.data;
-
-                this.prependBackLink();
+                this.message.text = 'File uploaded successfully';
+                this.message.color = 'success';
+                this.message.postCloseAction = () => this.onDirectoryClick(this.currentDirectory);
+                this.showMessage = true;
               },
             ).catch(
               (error) => {
                 console.error(error);
+
+                this.message.text = 'Error uploading file';
+                this.message.color = 'error';
+                this.message.postCloseAction = () => this.onDirectoryClick(this.currentDirectory);
+                this.showMessage = true;
               },
             ).finally(
               () => {
                 this.file = null;
                 this.uploading = false;
+
+                this.closeUpload();
               },
             );
         },
       },
       mounted() {
-        axios.get(`${this.currentDirectory}`)
-          .then(
-            (response) => {
-              this.tree = response.data;
-            },
-          )
-          .catch(
-            (error) => {
-              console.error(error);
-            }
-          ).finally(
-            () => {
-              this.loading = false;
-            },
-          );
+        this.onDirectoryClick(this.currentDirectory);
       },
       watch: {
         currentDirectory() {
@@ -417,11 +476,11 @@
           if (
             el.contains(event.target)
             || (/info/).test(event.target.className)
-            || (/info/).test(event.target.parentElement.className)
-            || (/info/).test(event.target.parentElement.parentElement.className)
+            || (/info/).test((event.target.parentElement || {}).className)
+            || (/info/).test(((event.target.parentElement || {}).parentElement || {}).className)
             || (/upload/).test(event.target.className)
-            || (/upload/).test(event.target.parentElement.className)
-            || (/upload/).test(event.target.parentElement.parentElement.className)
+            || (/upload/).test((event.target.parentElement || {}).className)
+            || (/upload/).test(((event.target.parentElement || {}).parentElement || {}).className)
           ) {
             return;
           }
@@ -437,7 +496,7 @@
     html, body {
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
+      box-sizing: radius-box;
       font-family: sans-serif;
       width: 100%;
       height: 100%;

@@ -153,8 +153,11 @@ const replyTree = ({
   );
   reply.send(
     {
-      directories: directoryObjects,
-      files: fileObjects,
+      success: true,
+      message: {
+        directories: directoryObjects,
+        files: fileObjects,
+      },
     }
   );
 };
@@ -199,7 +202,7 @@ server.addHook('preHandler', async (request, reply) => {
       (files) => replyTree({ files, newPath, reply })
     ).catch(
       (error) => {
-        reply.status(500).send({ error: error.message });
+        reply.status(500).send({ success: false, message: error.message });
       }
     );
   }
@@ -230,11 +233,11 @@ if (allowFileUploads) {
         (files) => replyTree({ files, newPath, reply })
       ).catch(
         (error) => {
-          reply.status(500).send({ error: error.message });
+          reply.status(500).send({ success: false, message: error.message });
         }
       );
-    } catch (err) {
-      reply.code(500).send({ success: false, message: err.message });
+    } catch (error) {
+      reply.code(500).send({ success: false, message: error.message });
     }
   });
 }
