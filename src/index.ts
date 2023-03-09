@@ -35,16 +35,24 @@ const argv = yargs(hideBin(process.argv))
     type: 'boolean',
     default: false,
   })
+  .option('max-file-size', {
+    describe: 'Maximum file size (in bytes) that can be uploaded to the server',
+    type: 'number',
+    default: 20 * 1024 * 1024, // 20 MB
+  })
   .help()
   .alias('help', 'h')
   .argv;
 
 // console.log('CLI arguments:', argv);
 
-const port = argv.port || 3000;
-const host = argv.host || '0.0.0.0';
-const allowFileUploads = argv.allowFileUploads || false;
-const showHiddenFiles = argv.showHiddenFiles || false;
+const {
+  port,
+  host,
+  allowFileUploads,
+  showHiddenFiles,
+  maxFileSize,
+} = argv;
 
 const pump = util.promisify(pipeline);
 
@@ -98,16 +106,21 @@ server.register(fastifyStatic, {
   prefix: '/',
 });
 
-server.register(fastifyMultipart);
+server.register(
+  fastifyMultipart,
+  {
+    limits: {
+      fileSize: maxFileSize,
+    },
+  },
+);
 
 const replyTree = ({
   files,
   newPath,
-  reply,
 }: {
   files: string[],
   newPath: string,
-  reply: FastifyReply,
 }) => {
   // Prepend "/fs/" to the file paths in the array
   const mappedObjects = files.map(
@@ -127,6 +140,7 @@ const replyTree = ({
       };
     },
   );
+
   const directoryObjects = mappedObjects.filter(
     (file) => (
       file.mimeType === 'inode/directory'
@@ -139,6 +153,7 @@ const replyTree = ({
       return aPath.localeCompare(bPath, undefined, { numeric: true });
     },
   );
+
   const fileObjects = mappedObjects.filter(
     (file) => (
       file.mimeType !== 'inode/directory'
@@ -151,15 +166,11 @@ const replyTree = ({
       return aPath.localeCompare(bPath, undefined, { numeric: true });
     },
   );
-  reply.send(
-    {
-      success: true,
-      message: {
-        directories: directoryObjects,
-        files: fileObjects,
-      },
-    }
-  );
+
+  return {
+    directories: directoryObjects,
+    files: fileObjects,
+  };
 };
 
 // Intercept the request and modify it as needed
@@ -199,7 +210,12 @@ server.addHook('preHandler', async (request, reply) => {
 
     // Run glob on the directory
     await glob(path.join(absolutePath, '*'), {dot: showHiddenFiles}).then(
-      (files) => replyTree({ files, newPath, reply })
+      (files) => reply.send(
+        {
+          success: true,
+          message: replyTree({ files, newPath }),
+        }
+      )
     ).catch(
       (error) => {
         reply.status(500).send({ success: false, message: error.message });
@@ -215,28 +231,44 @@ if (allowFileUploads) {
   server.post('/upload', async (request, reply) => {
     const { path: filePath } = request.query as any;
 
-    const data = await request.file()
+    const files = await request.files();
 
-    // stream
+    const errors = [];
 
-    const fileName = data.filename;
-    const fileData = data.file;
+    const newPath = filePath.replace(/^\/fs\//, '');
 
     try {
-      const newPath = filePath.replace(/^\/fs\//, '');
+      // Use async for...of loop to iterate over the async iterable
+      for await (const file of files) {
+        if (file.file) {
+          const fileName = file.filename;
+          const fileData = file.file;
 
-      const fullPath = path.join(process.cwd(), newPath, fileName);
+          const fullPath = path.join(process.cwd(), newPath, fileName);
 
-      await pump(fileData, fs.createWriteStream(fullPath));
+          console.log('Writing:', fullPath);
+
+          await pump(fileData, fs.createWriteStream(fullPath))
+        }
+      }
 
       await glob(path.join(process.cwd(), newPath, '*'), {}).then(
-        (files) => replyTree({ files, newPath, reply })
+        (files) => reply.send(
+          {
+            success: true,
+            message: {
+              ...replyTree({ files, newPath }),
+              errors,
+            },
+          }
+        )
       ).catch(
         (error) => {
-          reply.status(500).send({ success: false, message: error.message });
+          errors.push(error.message);
         }
       );
     } catch (error) {
+      console.error(error);
       reply.code(500).send({ success: false, message: error.message });
     }
   });

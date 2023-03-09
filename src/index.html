@@ -153,7 +153,7 @@
         @submit.prevent="uploadFile"
       >
         <label
-          for="file"
+          for="files"
           class="upload-choose-button mb-2 p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg flex items-center"
           :class="{'cursor-pointer': !uploading}"
           :disabled="uploading"
@@ -164,18 +164,19 @@
           <span class="mx-1">Choose File</span>
         </label>
         <input
-          id="file"
+          id="files"
           type="file"
           class="hidden"
+          multiple
           @change="onFileChange"
         />
         <button
           class="upload-button mb-2 p-4 text-white rounded-lg flex items-center"
           :class="{
-            'cursor-pointer bg-green-500 dark:bg-green-600': file,
-            'bg-gray-500 dark:bg-gray-600': !file,
+            'cursor-pointer bg-green-500 dark:bg-green-600': files,
+            'bg-gray-500 dark:bg-gray-600': !files,
           }"
-          :disabled="!file"
+          :disabled="!files"
           v-if="!uploading"
         >
           "/assets/icons/upload-cloud.svg"
@@ -184,8 +185,8 @@
         <div
           class="mb-2 py-4 px-5 text-white rounded-lg flex items-center w-full"
           :class="{
-            'bg-green-500 dark:bg-green-600': file,
-            'bg-gray-500 dark:bg-gray-600': !file,
+            'bg-green-500 dark:bg-green-600': files,
+            'bg-gray-500 dark:bg-gray-600': !files,
           }"
           v-if="uploading"
         >
@@ -330,7 +331,7 @@
           },
           uploading: false,
           uploadProgress: 0,
-          file: null,
+          files: null,
           tree: {
             files: [],
             directories: [],
@@ -409,18 +410,20 @@
             );
         },
         onFileChange(event) {
-          this.file = event.target.files[0];
-        },
-        uploadFile() {
           const formData = new FormData();
 
-          formData.append('file', this.file);
+          for(let i = 0; i < event.target.files.length; i++) {
+            formData.append('file', event.target.files[i]);
+          }
 
+          this.files = formData;
+        },
+        uploadFile() {
           this.uploading = true;
 
           axios.post(
             `/upload?path=${this.currentDirectory}`,
-            formData,
+            this.files,
             {
               onUploadProgress: ({progress}) => {
                 this.uploadProgress = parseInt(progress * 100);
@@ -445,7 +448,7 @@
               },
             ).finally(
               () => {
-                this.file = null;
+                this.files = null;
                 this.uploading = false;
 
                 this.closeUpload();
@@ -456,17 +459,17 @@
       mounted() {
         this.onDirectoryClick(this.currentDirectory);
       },
-      watch: {
-        currentDirectory() {
-          console.log(
-            JSON.stringify(
-              this.tree.files.map((file) => file.mimeType),
-              null,
-              2,
-            ),
-          );
-        },
-      },
+      // watch: {
+      //   currentDirectory() {
+      //     console.log(
+      //       JSON.stringify(
+      //         this.tree.files.map((file) => file.mimeType),
+      //         null,
+      //         2,
+      //       ),
+      //     );
+      //   },
+      // },
     });
     
     app.directive(
