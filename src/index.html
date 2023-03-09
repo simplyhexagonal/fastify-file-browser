@@ -6,74 +6,240 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>File Browser</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📂</text></svg>">
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/vue@3.2.47/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/axios@1.3.4/dist/axios.min.js"></script>
   "/assets/css/tailwind.css"
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-50">
   <div id="app" class="w-full h-full">
     <div class="header flex bg-gray-200 dark:bg-gray-700 p-2">
-      <div class="flex-1">
-        &nbsp;
-      </div>
-      <!-- controls -->
-      <div class="flex items-center justify-end">
-        <input
-          name="showThumbnails"
-          id="showThumbnails"
-          type="checkbox"
-          class="form-checkbox h-5 w-5 text-gray-600"
-          v-model="showThumbnails"
-        />
-        <label
-          for="showThumbnails"
-          class="cursor-pointer ml-2"
-        >
-          Show Thumbnails
-        </label>
-        <span class="mx-4">|</span>
+      <div class="flex-1 m-4 sm:m-0">
         <button
-          class="flex items-center dark:hover:bg-sky-700 hover:bg-sky-200"
-          @click="() => onDirectoryClick(currentDirectory)"
+          class="info-button flex items-center dark:hover:bg-sky-700 hover:bg-sky-200"
+          @click="toggleInfo"
         >
-          "/assets/icons/refresh.svg"
-          <span class="mx-1">Refresh</span>
+          "/assets/icons/information.svg"
         </button>
       </div>
+      <!-- controls -->
+      <div class="block sm:flex items-center justify-end">
+        <div class="sm:hidden m-4 sm:m-0 text-right">
+          <button
+            class="menu-button items-center dark:hover:bg-sky-700 hover:bg-sky-200"
+            @click="toggleMenu"
+          >
+            "/assets/icons/menu.svg"
+          </button>
+        </div>
+        <div class="sm:flex m-4 sm:m-0" :class="{'hidden': !showMenu}">
+          <input
+            name="showThumbnails"
+            id="showThumbnails"
+            type="checkbox"
+            class="form-checkbox h-5 w-5 text-gray-600"
+            v-model="showThumbnails"
+          />
+          <label
+            for="showThumbnails"
+            class="cursor-pointer ml-2"
+          >
+            Show Thumbnails
+          </label>
+        </div>
+        <span class="mx-4 hidden sm:block">|</span>
+        <div v-if="uploadsAllowed" class="sm:flex m-4 sm:m-0" :class="{'hidden': !showMenu}">
+          <button
+            class="upload-button flex items-center dark:hover:bg-sky-700 hover:bg-sky-200"
+            @click="toggleUpload"
+          >
+            "/assets/icons/upload-cloud.svg"
+            <span class="mx-1">Upload</span>
+          </button>
+        </div>
+        <span v-if="uploadsAllowed" class="mx-4 hidden sm:block">|</span>
+        <div class="sm:flex m-4 sm:m-0" :class="{'hidden': !showMenu}">
+          <button
+            class="flex items-center dark:hover:bg-sky-700 hover:bg-sky-200"
+            @click="() => onDirectoryClick(currentDirectory)"
+          >
+            "/assets/icons/refresh.svg"
+            <span class="mx-1">Refresh</span>
+          </button>
+        </div>
+      </div>
     </div>
-    <ul class="directories flex flex-wrap p-4">
-      <li
-        @click.stop.prevent="() => onDirectoryClick(directory.path)"
-        class="cursor-pointer my-4 mx-2 w-[8rem] dark:hover:bg-sky-700 hover:bg-sky-200"
-        v-for="directory in tree.directories"
-      >
-        <span
-          class="icon block m-auto text-center text-green-600 dark:text-green-400"
-          v-html="getIcon(directory)"
+    <div
+      class="info absolute top-12 left-4 bg-gray-300 dark:bg-gray-700 shadow-lg p-8 rounded-lg z-20"
+      v-if="showInfo"
+      v-click-outside="closeInfo"
+    >
+      <h2 class="text-xl font-bold mb-2">Made with ❤ by Simply Hexagonal</h2>
+      <p class="mb-8">
+        <a
+          class="text-indigo-700 dark:text-indigo-300"
+          target="_blank"
+          href=""
         >
-          <!-- dynamic -->
-        </span>
-        <a class="file-name block m-auto text-center" :href="directory.path">
-          {{ directory.name }}
+          website
         </a>
-      </li>
-    </ul>
-    <ul class="files flex flex-wrap p-4" :class="{'thumbnails': showThumbnails}">
-      <li
-        v-for="file in tree.files"
-        class="cursor-pointer my-4 mx-2 w-[8rem] dark:hover:bg-sky-700 hover:bg-sky-200"
+        <span> | </span>
+        <a
+          class="text-indigo-700 dark:text-indigo-300"
+          target="_blank"
+          href=""
+        >
+          github
+        </a>
+      </p>
+      <p class="mb-2">
+        Built using:
+      </p>
+      <ul class="list-disc list-inside pl-2">
+        <li>
+          <a
+            class="text-indigo-700 dark:text-indigo-300"
+            target="_blank"
+            href="https://www.fastify.io/"
+          >
+            Fastify
+          </a>
+        </li>
+        <li>
+          <a
+            class="text-indigo-700 dark:text-indigo-300"
+            target="_blank"
+            href="https://vuejs.org/"
+          >
+            Vue JS
+          </a>
+        </li>
+        <li>
+          <a
+            class="text-indigo-700 dark:text-indigo-300"
+            target="_blank"
+            href="https://tailwindcss.com/"
+          >
+            Tailwind CSS
+          </a>
+        </li>
+        <li>
+          <a
+            class="text-indigo-700 dark:text-indigo-300"
+            target="_blank"
+            href="https://axios-http.com/"
+          >
+            Axios
+          </a>
+        </li>
+        <li>
+          <a
+            class="text-indigo-700 dark:text-indigo-300"
+            target="_blank"
+            href="https://remixicon.com/"
+          >
+            Remix Icon
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div
+      class="upload absolute top-12 right-4 bg-gray-300 dark:bg-gray-700 shadow-lg p-8 rounded-lg z-20"
+      v-if="showUpload"
+      v-click-outside="closeUpload"
+    >
+      <h2 class="text-xl font-bold mb-2">Upload File</h2>
+      <form
+        class="upload-form flex flex-col"
+        @submit.prevent="uploadFile"
       >
-        <a class="block w-full h-full" :href="file.path" target="_blank">
+        <label
+          for="file"
+          class="upload-choose-button cursor-pointer mb-2 p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg flex items-center"
+        >
+          <span class="icon">
+            "/assets/icons/upload-cloud.svg"
+          </span>
+          <span class="mx-1">Choose File</span>
+        </label>
+        <input
+          id="file"
+          type="file"
+          class="hidden"
+          @change="onFileChange"
+        />
+        <button
+          class="upload-button mb-2 p-4 text-white rounded-lg flex items-center"
+          :class="{
+            'cursor-pointer bg-green-500 dark:bg-green-600': file,
+            'bg-gray-500 dark:bg-gray-600': !file,
+          }"
+          :disabled="!file"
+          v-if="!uploading"
+        >
+          "/assets/icons/upload-cloud.svg"
+          <span class="mx-1">Upload</span>
+        </button>
+        <div
+          class="loader mb-2 py-4 px-5 text-white rounded-lg flex items-center w-full"
+          :class="{
+            'bg-green-500 dark:bg-green-600': file,
+            'bg-gray-500 dark:bg-gray-600': !file,
+          }"
+          v-if="uploading"
+        >
+          <div></div><div></div><div></div>
+        </div>
+      </form>
+    </div>
+    <div v-if="loading" class="flex py-4 px-5">
+      <div
+        class="loader text-white rounded-lg flex items-center"
+      >
+        <div></div><div></div><div></div>
+      </div>
+      <div class="pl-8">
+        Loading...
+      </div>
+    </div>
+    <div v-if="!loading" class="relative h-full">
+      <ul class="directories flex flex-wrap p-4">
+        <li
+          @click.stop.prevent="() => onDirectoryClick(directory.path)"
+          class="cursor-pointer my-4 mx-2 w-[8rem] dark:hover:bg-sky-700 hover:bg-sky-200"
+          v-for="directory in tree.directories"
+        >
           <span
-            class="icon block m-auto text-center text-slate-500 dark:text-slate-300"
-            v-html="getIcon(file)"
+            class="icon block m-auto text-center text-green-600 dark:text-green-400"
+            v-html="getIcon(directory)"
           >
             <!-- dynamic -->
           </span>
-          <span class="file-name block m-auto text-center">{{ file.name }}</span>
-        </a>
-      </li>
-    </ul>
+          <a class="file-name block m-auto text-center" :href="directory.path">
+            {{ directory.name }}
+          </a>
+        </li>
+      </ul>
+      <ul class="files flex flex-wrap p-4" :class="{'thumbnails': showThumbnails}">
+        <li
+          v-for="file in tree.files"
+          class="cursor-pointer my-4 mx-2 w-[8rem] dark:hover:bg-sky-700 hover:bg-sky-200"
+        >
+          <a class="block w-full h-full" :href="file.path" target="_blank">
+            <span
+              class="icon block m-auto text-center text-slate-500 dark:text-slate-300"
+              v-html="getIcon(file)"
+            >
+              <!-- dynamic -->
+            </span>
+            <span class="file-name block m-auto text-center">{{ file.name }}</span>
+          </a>
+        </li>
+      </ul>
+      <div
+        v-if="showUpload || showInfo"
+        class="absolute top-0 right-0 bottom-0 left-0 bg-black opacity-50 z-10"
+      ></div>
+    </div>
   </div>
 
   <script>
@@ -112,11 +278,18 @@
       'application/gzip': '/assets/icons/file-zip.svg',
     };
 
-    createApp({
+    const app = createApp({
       data: () => (
         {
+          uploadsAllowed: ALLOW_FILE_UPLOADS,
+          loading: true,
           currentDirectory: ROOT_DIR,
           showThumbnails: false,
+          showInfo: false,
+          showUpload: false,
+          showMenu: false,
+          uploading: false,
+          file: null,
           tree: {
             files: [],
             directories: [],
@@ -124,6 +297,21 @@
         }
       ),
       methods: {
+        toggleInfo() {
+          this.showInfo = !this.showInfo;
+        },
+        closeInfo() {
+          this.showInfo = false;
+        },
+        toggleUpload() {
+          this.showUpload = !this.showUpload;
+        },
+        closeUpload() {
+          this.showUpload = false;
+        },
+        toggleMenu() {
+          this.showMenu = !this.showMenu;
+        },
         getIcon({mimeType, path}) {
           if (this.showThumbnails && (/^image/).test(mimeType)) {
             return `<img src="${path.replace(/\/fs\//, '/')}"/>`;
@@ -131,34 +319,83 @@
 
           return MIMETYPE_ICON_MAP[mimeType] || MIMETYPE_ICON_MAP['application/octet-stream'];
         },
-        onDirectoryClick(path) {
-          axios.get(`${path}`)
-            .then((response) => {
-              this.tree = response.data;
-
-              this.currentDirectory = path;
-
-              if (this.currentDirectory !== ROOT_DIR) {
-                this.tree.directories.unshift({
-                  name: '..',
-                  path: this.currentDirectory.split('/').slice(0, -2).join('/') + '/',
-                  mimeType: 'inode/directory',
-                });
-              }
-            })
-            .catch((error) => {
-              console.error(error);
+        prependBackLink() {
+          if (this.currentDirectory !== ROOT_DIR) {
+            this.tree.directories.unshift({
+              name: '..',
+              path: this.currentDirectory.split('/').slice(0, -2).join('/') + '/',
+              mimeType: 'inode/directory',
             });
+          }
+        },
+        onDirectoryClick(path) {
+          this.loading = true;
+
+          axios.get(`${path}`)
+            .then(
+              (response) => {
+                this.tree = response.data;
+
+                this.currentDirectory = path;
+
+                this.prependBackLink();
+              },
+            )
+            .catch(
+              (error) => {
+                console.error(error);
+              },
+            ).finally(
+              () => {
+                this.loading = false;
+              },
+            );
+        },
+        onFileChange(event) {
+          this.file = event.target.files[0];
+        },
+        uploadFile() {
+          const formData = new FormData();
+
+          formData.append('file', this.file);
+
+          this.uploading = true;
+
+          axios.post(`/upload?path=${this.currentDirectory}`, formData)
+            .then(
+              (response) => {
+                this.tree = response.data;
+
+                this.prependBackLink();
+              },
+            ).catch(
+              (error) => {
+                console.error(error);
+              },
+            ).finally(
+              () => {
+                this.file = null;
+                this.uploading = false;
+              },
+            );
         },
       },
       mounted() {
         axios.get(`${this.currentDirectory}`)
-          .then((response) => {
-            this.tree = response.data;
-          })
-          .catch((error) => {
-            console.error(error);
-          });
+          .then(
+            (response) => {
+              this.tree = response.data;
+            },
+          )
+          .catch(
+            (error) => {
+              console.error(error);
+            }
+          ).finally(
+            () => {
+              this.loading = false;
+            },
+          );
       },
       watch: {
         currentDirectory() {
@@ -171,7 +408,29 @@
           );
         },
       },
-    }).mount('#app');
+    });
+    
+    app.directive(
+      'click-outside',
+      (el, binding, vnode) => {
+        document.addEventListener('click', (event) => {
+          if (
+            el.contains(event.target)
+            || (/info/).test(event.target.className)
+            || (/info/).test(event.target.parentElement.className)
+            || (/info/).test(event.target.parentElement.parentElement.className)
+            || (/upload/).test(event.target.className)
+            || (/upload/).test(event.target.parentElement.className)
+            || (/upload/).test(event.target.parentElement.parentElement.className)
+          ) {
+            return;
+          }
+          binding.value(event);
+        });
+      },
+    );
+    
+    app.mount('#app');
   </script>
 
   <style>
@@ -202,6 +461,41 @@
     }
     .file-name {
       overflow-wrap: break-word;
+    }
+    .loader {
+      display: inline-block;
+      position: relative;
+    }
+    .loader div {
+      display: inline-block;
+      position: absolute;
+      top: 2.4px;
+      left: 2.4px;
+      width: 4.8px;
+      background: #fff;
+      animation: loader 1.2s cubic-bezier(0, 0.5, 0.5, 1) infinite;
+    }
+    .loader div:nth-child(1) {
+      left: 2.4px;
+      animation-delay: -0.24s;
+    }
+    .loader div:nth-child(2) {
+      left: 9.6px;
+      animation-delay: -0.12s;
+    }
+    .loader div:nth-child(3) {
+      left: 16.8px;
+      animation-delay: 0;
+    }
+    @keyframes loader {
+      0% {
+        top: 2.4px;
+        height: 19.2px;
+      }
+      50%, 100% {
+        top: 7.2px;
+        height: 9.6px;
+      }
     }
   </style>
 </body>

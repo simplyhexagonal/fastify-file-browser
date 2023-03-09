@@ -1,3 +1,3 @@
 #! /usr/bin/env bash
 
-npm run tailwind && ts-node src/index.ts
+npm run tailwind && ts-node src/index.ts --allow-file-uploads --show-hidden-files

@@ -1,7 +1,7 @@
 # Fastify File Browser 📂
 
-Fastify File Browser provides a read-only file browser UI for viewing and downloading local files
-within the working directory where you run it.
+Fastify File Browser provides a simple yet blazing fast file browser UI for viewing and downloading
+local files within the working directory where you run it.
 
 ![](https://raw.githubusercontent.com/simplyhexagonal/fastify-file-browser/main/demo.gif)
 
@@ -29,24 +29,51 @@ Please consider:
 
 ## Features
 
-- Lightweight
-- Self-contained
-- Simple and fast UI
-- Proper icons automagically shown for common filetypes
-- Toggle to view image thumbnails
-- Reload current directory file list without having to reload tab
-- Files served with proper mime-type so browser knows how to display or download respectively
+- Lightweight 🪶
+- Self-contained 📦
+- Simple and fast UI ✨
+- Light and Dark theme 🌗
+- Proper icons automagically shown for common filetypes 🪄
+- Toggle to view image thumbnails 🖼️
+- Reload current directory file list without having to reload tab 🔃
+- Files served with proper mime-type so browser knows how to display or download respectively 🗃️
+- Ability to show hidden files 🔍
+- Ability to upload files ☁️
+- Mobile friendly UI 📱
 
 ## Usage
+
+Using NPX:
 
 ```
 npx @simplyhexagonal/fastify-file-browser
 ```
 
-Optionally you can set the port and host:
+Installing globally:
 
 ```
-npx @simplyhexagonal/fastify-file-browser [port] [host]
+npm i --global @simplyhexagonal/fastify-file-browser
+```
+
+```
+fastify-file-browser
+```
+
+Optionally you can set other options using CLI arguments:
+
+```
+Options:
+      --version             Show version number                 [boolean]
+      --port                Port number to listen on
+                                                 [number] [default: 3000]
+      --host                Host name to bind to (use '0.0.0.0' to expose
+                             to the network)
+                                          [string] [default: "localhost"]
+      --allow-file-uploads  Allow file uploads to the server
+                                               [boolean] [default: false]
+      --show-hidden-files   Show hidden files in directory listings
+                                               [boolean] [default: false]
+  -h, --help                Show help                           [boolean]
 ```
 
 ## Contributing
