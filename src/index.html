@@ -22,7 +22,7 @@
         </button>
       </div>
       <!-- controls -->
-      <div class="block sm:flex items-center justify-end">
+      <div v-if="!selectedFile && !showMessage" class="block sm:flex items-center justify-end">
         <div class="sm:hidden m-4 sm:m-0 text-right">
           <button
             class="menu-button items-center dark:hover:bg-sky-700 hover:bg-sky-200"
@@ -209,7 +209,10 @@
         Loading...
       </div>
     </div>
-    <div v-if="!loading" class="relative h-full">
+    <div
+      v-if="!loading && !selectedFile"
+      class="relative"
+    >
       <ul class="directories flex flex-wrap p-4">
         <li
           @click.stop.prevent="() => onDirectoryClick(directory.path)"
@@ -232,7 +235,11 @@
           v-for="file in tree.files"
           class="cursor-pointer my-4 mx-2 w-[8rem] dark:hover:bg-sky-700 hover:bg-sky-200"
         >
-          <a class="block w-full h-full" :href="file.path" target="_blank">
+          <a
+            class="block w-full h-full"
+            :href="file.path" target="_blank"
+            @click.stop.prevent="() => onFileClick(file)"
+          >
             <span
               class="icon block m-auto text-center text-slate-500 dark:text-slate-300"
               v-html="getIcon(file)"
@@ -243,28 +250,118 @@
           </a>
         </li>
       </ul>
-      <div
-        v-if="showUpload || showInfo || showMessage"
-        class="absolute top-0 right-0 bottom-0 left-0 bg-black opacity-50 z-10"
-      ></div>
-      <div
-        v-if="showMessage"
-        class="absolute top-0 right-0 bottom-0 left-0 grid justify-items-center content-center z-20"
-        @click.self="() => closeMessage()"
-      >
-        <div
-          class="message rounded-lg p-5 shadow-lg"
-          :class="MESSAGE_COLOR_CLASS_MAP[message.color]"
-        >
-          <div class="mb-4">{{message.text}}</div>
-          <div class="text-right">
+    </div>
+    <div
+      v-if="selectedFile"
+      class="selected-file relative"
+    >
+      <div class="block sm:flex p-4 max-w-3xl">
+        <div class="flex flex-1 flex-col items-center justify-center">
+          <span
+            class="icon block m-auto text-slate-500 dark:text-slate-300"
+            v-html="getIcon(selectedFile)"
+          >
+            <!-- dynamic -->
+          </span>
+          <span class="file-name ml-4">{{ selectedFile.name }}</span>
+        </div>
+        <div class="flex flex-col space-y-2 sm:w-80 py-4">
+          <div class="flex items-center">
+            <a
+              class="text-center p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg w-full"
+              :href="selectedFile.path" target="_blank"
+            >
+              Download
+            </a>
+          </div>
+          <div class="flex items-center">
+            <input
+              class="flex-1 p-4 bg-zinc-300 dark:bg-zinc-600 text-white rounded-lg mr-2"
+              type="text"
+              v-model="selectedFileName"
+            />
             <button
-              class="close-message-button p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg"
-              @click="closeMessage"
+              class="flex justify-center p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg"
+              @click="onRenameFile"
+              :disabled="renaming || deleting"
+            >
+              <div class="flex">
+                <span v-if="!renaming">
+                  Rename
+                </span>
+                <div class="loader mb-6 w-6" v-if="renaming">
+                  <div></div><div></div><div></div>
+                </div>
+              </div>
+            </button>
+          </div>
+          <div class="flex items-center">
+            <button
+              v-if="!confirmingDelete"
+              class="flex justify-center p-4 bg-red-500 dark:bg-red-600 text-white rounded-lg w-full"
+              @click="confirmDelete"
+              :disabled="deleting || renaming"
+            >
+              <div class="flex">
+                <span v-if="!deleting">
+                  Delete
+                </span>
+                <div class="loader mb-6" v-if="deleting">
+                  <div></div><div></div><div></div>
+                </div>
+                <div class="pl-8" v-if="deleting">
+                  Deleting...
+                </div>
+              </div>
+            </button>
+            <button
+              v-if="confirmingDelete"
+              class="flex-1 text-center p-4 bg-red-500 dark:bg-red-600 text-white rounded-lg mr-1"
+              @click="onDeleteFile"
+            >
+              Confirm Delete
+            </button>
+            <button
+              v-if="confirmingDelete"
+              class="flex-1 text-center p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg ml-1"
+              @click="cancelDelete"
+            >
+              Cancel
+            </button>
+          </div>
+          <div class="flex items-center">
+            <button
+              class="text-center p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg w-full"
+              @click="onCloseFile"
+              :disabled="deleting || renaming"
             >
               Close
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+    <div
+      v-if="showUpload || showInfo || showMessage"
+      class="absolute top-0 right-0 bottom-0 left-0 bg-black opacity-50 z-10"
+    ></div>
+    <div
+      v-if="showMessage"
+      class="absolute top-0 right-0 bottom-0 left-0 grid justify-items-center content-center z-20"
+      @click.self="() => closeMessage()"
+    >
+      <div
+        class="message rounded-lg p-5 shadow-lg"
+        :class="MESSAGE_COLOR_CLASS_MAP[message.color]"
+      >
+        <div class="mb-4">{{message.text}}</div>
+        <div class="text-right">
+          <button
+            class="close-message-button p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg"
+            @click="closeMessage"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -324,6 +421,7 @@
           showUpload: false,
           showMenu: false,
           showMessage: false,
+          confirmingDelete: false,
           message: {
             text: '',
             color: 'default',
@@ -331,7 +429,11 @@
           },
           uploading: false,
           uploadProgress: 0,
+          deleting: false,
+          renaming: false,
           files: null,
+          selectedFile: null,
+          selectedFileName: null,
           tree: {
             files: [],
             directories: [],
@@ -406,6 +508,76 @@
             ).finally(
               () => {
                 this.loading = false;
+              },
+            );
+        },
+        onFileClick(file) {
+          console.log(JSON.stringify(file, null, 2));
+          this.selectedFile = file;
+          this.selectedFileName = file.name;
+        },
+        onCloseFile() {
+          this.selectedFile = null;
+          this.selectedFileName = null;
+        },
+        confirmDelete() {
+          this.confirmingDelete = true;
+        },
+        cancelDelete() {
+          this.confirmingDelete = false;
+        },
+        onDeleteFile() {
+          this.confirmingDelete = false;
+          this.deleting = true;
+
+          axios.delete(`/delete?path=${this.selectedFile.path}`)
+            .then(
+              (response) => {
+                this.message.text = 'File deleted successfully';
+                this.message.color = 'success';
+                this.message.postCloseAction = () => this.onDirectoryClick(this.currentDirectory);
+                this.showMessage = true;
+              },
+            ).catch(
+              (error) => {
+                console.error(error);
+
+                this.message.text = 'Error deleting file';
+                this.message.color = 'error';
+                this.message.postCloseAction = null;
+                this.showMessage = true;
+              },
+            ).finally(
+              () => {
+                this.selectedFile = null;
+                this.deleting = false;
+              },
+            );
+        },
+        onRenameFile() {
+          this.renaming = true;
+
+          axios.put(`/rename?path=${this.selectedFile.path}&newFileName=${this.selectedFileName}`)
+            .then(
+              (response) => {
+                this.message.text = 'File renamed successfully';
+                this.message.color = 'success';
+                this.message.postCloseAction = () => this.onDirectoryClick(this.currentDirectory);
+                this.showMessage = true;
+              },
+            ).catch(
+              (error) => {
+                console.error(error);
+
+                this.message.text = 'Error renaming file';
+                this.message.color = 'error';
+                this.message.postCloseAction = null;
+                this.showMessage = true;
+              },
+            ).finally(
+              () => {
+                this.selectedFile = null;
+                this.renaming = false;
               },
             );
         },
@@ -520,6 +692,10 @@
     .files.thumbnails svg,
     .files.thumbnails img {
       width: 128px;
+    }
+    .selected-file svg,
+    .selected-file img {
+      width: 256px;
     }
     .file-name {
       overflow-wrap: break-word;

@@ -1,3 +1,16 @@
 #! /usr/bin/env bash
+trap "kill 9" EXIT
 
-npm run tailwind && ts-node src/index.ts --allow-file-uploads --show-hidden-files
+export NODE_ENV=dev
+export LIVE_PORT=35729
+
+node -e '
+  const livereload = require("livereload");
+  const liveServer = livereload.createServer({
+    port: '$LIVE_PORT',
+  });
+  liveServer.watch(process.cwd());
+' &
+
+nodemon -w src -e ts,html \
+  --exec "npm run tailwind && rm -rf ./dist && mkdir -p dist && ./scripts/build && cp -r ./src/assets ./dist/assets && node dist/index.js --allow-file-uploads --show-hidden-files"

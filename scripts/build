@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
+require('dotenv').config();
 const fs = require('fs');
 const { build } = require('esbuild');
 const { parse: parseHtml } = require('node-html-parser');
 const axios = require('axios');
 const { minify } = require('@minify-html/node');
+
+const isDev = process.env.NODE_ENV === 'dev';
+const livePort = process.env.LIVE_PORT || 35729;
 
 const fileSrcPath = `src/index.ts`;
 const fileDir = (
@@ -42,7 +46,7 @@ let htmlEmbedPlugin = {
             if (src) {
               // use axios to get the script
               const scriptContent = await axios.get(src).then(
-                (res) => res.data
+                (res) => res.data.replace(/\/\/#\s*sourceMappingURL=\S+.map/g, '')
               );
               
               // replace the script tag with the script content
@@ -57,6 +61,19 @@ let htmlEmbedPlugin = {
         let resultHtml = parsedHtml.toString();
 
         resultHtml = resultHtml.replace(/[`\\$]/g, '\\$&');
+
+        if (isDev) {
+          resultHtml = resultHtml.replace(
+              '</body>',
+              `
+              <script>
+                document.write(
+                  '<script src="http://localhost:${livePort}/livereload.js?snipver=1"></' + 'script>'
+                )
+              </script></body>
+              `,
+          );
+        }
 
         const minified = minify(
           Buffer.from(resultHtml),

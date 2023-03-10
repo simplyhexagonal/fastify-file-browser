@@ -54,6 +54,13 @@ const {
   maxFileSize,
 } = argv;
 
+const sanitizeErrorString = (errorString: string) => {
+  return errorString.replaceAll(
+    process.cwd(),
+    '',
+  );
+};
+
 const pump = util.promisify(pipeline);
 
 const server = fastify();
@@ -177,20 +184,41 @@ const replyTree = ({
 server.addHook('preHandler', async (request, reply) => {
   const requestedPath = request.url;
 
+  const {
+    path: filePath,
+    newFileName,
+  } = request.query as any;
+
   console.log(`Requested path: ${requestedPath}`);
 
+  // If requested path matches malicious regex return error
+  if (`${requestedPath} ${filePath} ${newFileName}`.match(/\.\./g)) {
+    console.error(
+      `Malicious request detected:`,
+      {
+        requestedPath,
+        filePath,
+        newFileName,
+      },
+    );
+
+    reply.status(400).send('Bad Request');
+    return;
+  }
+
+  // If the requested path is just "/", return an empty string with header content-type for an html file
   if (requestedPath === '/') {
-    // If the requested path is just "/", return an empty string with header content-type for an html file
     reply.type('text/html').send(html);
     return;
   }
 
+  // If the requested path is just "/", return an empty string with header content-type for an html file
   if (requestedPath === '/favicon.ico') {
-    // If the requested path is just "/", return an empty string with header content-type for an html file
     reply.type('image/x-icon').send('');
     return;
   }
 
+  // If the requested path does not contain "/fs", let request through to route handlers
   if (!(/^\/fs/).test(requestedPath)) {
     return;
   }
@@ -205,7 +233,16 @@ server.addHook('preHandler', async (request, reply) => {
     try {
       await fs.promises.access(absolutePath);
     } catch (error) {
-      reply.status(404).send({ error: 'Directory not found' });
+      console.error(error);
+
+      reply.status(404).send(
+        {
+          success: false,
+          message: {
+            errors: ['Directory not found'],
+          },
+        },
+      );
     }
 
     // Run glob on the directory
@@ -218,7 +255,16 @@ server.addHook('preHandler', async (request, reply) => {
       )
     ).catch(
       (error) => {
-        reply.status(500).send({ success: false, message: error.message });
+        console.error(error);
+
+        reply.status(500).send(
+          {
+            success: false,
+            message: {
+              errors: [sanitizeErrorString(error.message)],
+            },
+          },
+        );
       }
     );
   }
@@ -238,6 +284,9 @@ if (allowFileUploads) {
     const newPath = filePath.replace(/^\/fs\//, '');
 
     try {
+      // Check if the directory is writable
+      fs.accessSync(path.join(process.cwd(), newPath), fs.constants.W_OK);
+
       // Use async for...of loop to iterate over the async iterable
       for await (const file of files) {
         if (file.file) {
@@ -248,28 +297,92 @@ if (allowFileUploads) {
 
           console.log('Writing:', fullPath);
 
-          await pump(fileData, fs.createWriteStream(fullPath))
+          await pump(fileData, fs.createWriteStream(fullPath)).catch(
+            (error) => {
+              errors.push(sanitizeErrorString(error.message));
+            }
+          );
         }
       }
 
-      await glob(path.join(process.cwd(), newPath, '*'), {}).then(
-        (files) => reply.send(
+      if (errors.length) {
+        console.error(errors);
+
+        reply.code(500).send(
           {
-            success: true,
-            message: {
-              ...replyTree({ files, newPath }),
-              errors,
-            },
-          }
-        )
-      ).catch(
-        (error) => {
-          errors.push(error.message);
-        }
-      );
+            success: false,
+            message: errors,
+          },
+        );
+      }
+
+      reply.send({ success: true });
     } catch (error) {
       console.error(error);
-      reply.code(500).send({ success: false, message: error.message });
+
+      reply.code(500).send(
+        {
+          success: false,
+          message: {
+            errors: [sanitizeErrorString(error.message)],
+          },
+        },
+      );
+    }
+  });
+
+  server.delete('/delete', async (request, reply) => {
+    const { path: filePath } = request.query as any;
+
+    const newPath = filePath.replace(/^\/fs\//, '');
+
+    try {
+      // Delete file using newPath
+      fs.unlinkSync(path.join(process.cwd(), newPath));
+
+      reply.send({ success: true });
+    } catch (error) {
+      console.error(error);
+
+      reply.code(500).send(
+        {
+          success: false,
+          message: {
+            errors: [sanitizeErrorString(error.message)],
+          },
+        },
+      );
+    }
+  });
+
+  server.put('/rename', async (request, reply) => {
+    const {
+      path: filePath,
+      newFileName,
+    } = request.query as any;
+
+    const originalPath = filePath.replace(/^\/fs\//, '');
+    const newPath = path.join(path.dirname(originalPath), newFileName);
+
+    try {
+      // Rename file using originalPath and newPath
+      fs.renameSync(
+        path.join(process.cwd(), originalPath),
+        path.join(process.cwd(), newPath),
+      );
+
+      reply.send({ success: true });
+    } catch (error) {
+      console.error(error);
+
+      reply.code(500).send(
+        {
+          success: false,
+          message: {
+            errors: [sanitizeErrorString(error.message)],
+          },
+        },
+      );
     }
   });
 }
