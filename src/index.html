@@ -271,7 +271,7 @@
               class="text-center p-4 bg-sky-500 dark:bg-sky-600 text-white rounded-lg w-full"
               :href="selectedFile.path" target="_blank"
             >
-              Download
+              {{selectedFile.name.endsWith('.html') ? 'Open' : 'Download'}}
             </a>
           </div>
           <div class="flex items-center">
