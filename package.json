@@ -1,6 +1,6 @@
 {
   "name": "@simplyhexagonal/fastify-file-browser",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Simple file browser UI for viewing and downloading local files within the current working directory.",
   "keywords": [
     "fastify",
@@ -36,7 +36,7 @@
     "tailwind": "npx tailwindcss -i ./src/tailwind.css -o ./src/assets/css/tailwind.css",
     "dev": "./scripts/dev",
     "build": "rm -rf ./dist && mkdir -p dist && ./scripts/build && cp -r ./src/assets ./dist/assets",
-    "postbuild": "npx rollup@3.18.0 ./dist/index.js --file ./dist/index.js --format cjs && ./scripts/binify"
+    "postbuild": "npx rollup@3.18.0 ./dist/index.js --file ./dist/index.js --format cjs && ./scripts/binify && chmod +x dist/index.js"
   },
   "author": "Jean M. Lescure",
   "license": "Apache-2.0",

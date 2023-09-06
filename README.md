@@ -5,6 +5,8 @@ local files within the working directory where you run it.
 
 ![](https://raw.githubusercontent.com/simplyhexagonal/fastify-file-browser/main/demo.gif)
 
+- [LIVE DEMO](https://simplyhexagonal.github.io/fastify-file-browser/demo/) (file uploads turned off)
+
 Built using:
 
 - [Fastify](https://www.fastify.io/) - HTTP Server
@@ -15,17 +17,18 @@ Built using:
 
 ## Open source notice
 
-This project is open to updates by its users, [I](https://github.com/jeanlescure) ensure that PRs are relevant to the community.
+This project is part of the [Open Collective](https://opencollective.com/simplyhexagonal) project [Simply Hexagonal](https://simplyhexagonal.org)
+and is open to updates by its users, we ensure that PRs are relevant to the community.
 In other words, if you find a bug or want a new feature, please help us by becoming one of the
-[contributors](#contributors-) ✌️ ! See the [contributing section](#contributing)
+[contributors](#contributors-) ✌️ ! See the [contributing section](#contributing).
 
 ## Like this module? ❤
 
 Please consider:
 
 - [Buying me a coffee](https://www.buymeacoffee.com/jeanlescure) ☕
-- Supporting Simply Hexagonal on [Open Collective](https://opencollective.com/simplyhexagonal) 🏆
-- Starring this repo on [Github](https://github.com/simplyhexagonal/fastify-file-browser) 🌟
+- Supporting me on [Patreon](https://www.patreon.com/jeanlescure) 🏆
+- Starring this repo on [Github](https://github.com/jeanlescure/short-unique-id) 🌟
 
 ## Features
 
@@ -63,17 +66,17 @@ Optionally you can set other options using CLI arguments:
 
 ```
 Options:
-      --version             Show version number                 [boolean]
-      --port                Port number to listen on
-                                                 [number] [default: 3000]
-      --host                Host name to bind to (use '0.0.0.0' to expose
-                             to the network)
-                                          [string] [default: "localhost"]
+      --version             Show version number                        [boolean]
+      --port                Port number to listen on    [number] [default: 3000]
+      --host                Host name to bind to (use '0.0.0.0' to expose to the
+                             network)            [string] [default: "127.0.0.1"]
       --allow-file-uploads  Allow file uploads to the server
-                                               [boolean] [default: false]
+                                                      [boolean] [default: false]
       --show-hidden-files   Show hidden files in directory listings
-                                               [boolean] [default: false]
-  -h, --help                Show help                           [boolean]
+                                                      [boolean] [default: false]
+      --max-file-size       Maximum file size (in bytes) that can be uploaded to
+                             the server             [number] [default: 20971520]
+  -h, --help                Show help                                  [boolean]
 ```
 
 ## Contributing

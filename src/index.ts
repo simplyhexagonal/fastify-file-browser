@@ -23,7 +23,7 @@ const argv = yargs(hideBin(process.argv))
   .option('host', {
     describe: 'Host name to bind to (use \'0.0.0.0\' to expose to the network)',
     type: 'string',
-    default: 'localhost',
+    default: '127.0.0.1',
   })
   .option('allow-file-uploads', {
     describe: 'Allow file uploads to the server',
@@ -206,13 +206,13 @@ server.addHook('preHandler', async (request, reply) => {
     return;
   }
 
-  // If the requested path is just "/", return an empty string with header content-type for an html file
+  // If the requested path is just "/", return an app html with header content-type for an html file
   if (requestedPath === '/') {
     reply.type('text/html').send(html);
     return;
   }
 
-  // If the requested path is just "/", return an empty string with header content-type for an html file
+  // If the requested path is "/favicon.ico", return empty string with header content-type for an icon file
   if (requestedPath === '/favicon.ico') {
     reply.type('image/x-icon').send('');
     return;
